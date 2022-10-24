@@ -1,13 +1,43 @@
 
 use std::io::Read;
+use std::process::exit;
 
 use crate::*;
 
+fn parse_args(h: &mut op) -> String {
+    let args = env::args().skip(1).collect::<Vec<String>>();
+
+    if (args.len() == 0) {
+        help();
+        exit(0);
+    }
+
+    let mut filename = String::new();
+
+    for e in args {
+        if e.starts_with('-') {
+            match e.as_str() {
+                "-m" | "--manhattan" => {*h = heuristic::manhattan_distance}
+                //"-h" | "--hamming" => {*h = heuristic::hamming_distance}
+                "-e" | "--euclidian" => {*h = heuristic::euclidian_distance_squared}
+                _ => error(format!("Unknown option \"{}\"", e.as_str()).as_str()),
+            } 
+        } else {
+            filename = e;
+        }
+    }
+    if (filename.len() == 0) {
+        error("No file provided");
+    }
+
+    return filename;
+}
+
 pub fn parse(n: &mut u16, start: &mut Vec<Vec<u16>>, h: &mut op) {
 
-    //parse_args(&mut h);
+    let filename = parse_args(h);
 
-    let contents = std::fs::read_to_string("map/map.txt").expect("Something went wrong reading the file");
+    let contents = std::fs::read_to_string(filename).expect("Something went wrong reading the file");
     let mut lines: Vec<&str> = contents.split(|c| c == '\n').collect();
 
     let mut i: usize = 0;
@@ -22,7 +52,7 @@ pub fn parse(n: &mut u16, start: &mut Vec<Vec<u16>>, h: &mut op) {
         match line.len() {
             0 => {
                 if i == lines.len() {
-                    panic!("Maybe you forgot to put a map in the file?");
+                    error("Maybe you forgot to put a map in the file?");
                 }
                 continue;
             }
@@ -30,7 +60,7 @@ pub fn parse(n: &mut u16, start: &mut Vec<Vec<u16>>, h: &mut op) {
                 *n = line[0].parse::<u16>().unwrap();
                 break;
             }
-            _ => {panic!("first line must contain only one number");}
+            _ => {error("first line must contain only one number");}
         }
     }
 
@@ -45,25 +75,19 @@ pub fn parse(n: &mut u16, start: &mut Vec<Vec<u16>>, h: &mut op) {
             continue;
         }
 
-        if (line.len() != *n as usize) {
-            panic!("line {} must contain {} numbers", i, n);
+        if line.len() != 0 && start.len() == *n as usize {
+            error("Invalid map");
         }
 
-        start.push(line.iter().map(|x| x.parse::<u16>().unwrap()).collect::<Vec<u16>>());
+        if (line.len() != *n as usize) {
+            error(format!("line {} must contain {} numbers", i, n).as_str());
+        }
 
-        //for j in 0..*n {
-            //let num = line[j as usize].parse::<u16>().unwrap();
-            //if num < 0 || num > *n * *n - 1 {
-                //panic!("number {} is out of range", num);
-            //}
-            //if start.contains(&num) {
-                //panic!("number {} is duplicated", num);
-            //}
-            //start.last().push(num);
-        //}
+
+        start.push(line.iter().map(|x| x.parse::<u16>().unwrap()).collect::<Vec<u16>>());
     }
 
     if start.len() != *n as usize {
-        panic!("map must contain {} numbers", *n * *n);
+        error(format!("map of dimension {} must contain {} numbers", n, *n * *n).as_str());
     }
 }

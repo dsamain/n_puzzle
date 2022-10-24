@@ -19,3 +19,16 @@ pub use heuristic::*;
 pub use parse::*;
 pub use init::*;
 
+pub fn error(msg: &str) {
+    eprintln!("Error: {}", msg);
+    std::process::exit(1);
+}
+
+pub fn help() {
+    println!("Usage: ./npuzzle [options] file\n");
+    
+    println!("Options:");
+    println!("    --hamming   | -h  : use hamming distance");
+    println!("    --manhattan | -m  : use manhattan distance");
+    println!("    --euclidian | -e  : use euclidian distance (default)");
+}

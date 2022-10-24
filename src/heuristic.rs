@@ -24,6 +24,20 @@ pub fn nothing(state: &Vec<u16>, target_map: &Vec<u16>, n: i32) -> u32 {
     //}
     //return ret as u32;
 //}
+#[inline]
+pub fn manhattan_distance(state: &Vec<Vec<u16>>, target_map: &Vec<(u16, u16)>, n: u16) -> u32 {
+    let n = n as i32;
+    let mut ret: i32 = 0;
+    for i in 0..state.len() {
+        for j in 0..state.len() {
+            if state[i][j] == 0 {
+                continue;
+            }
+            ret += ((target_map[state[i][j] as usize].0 as i32 - i as i32).abs() + (target_map[state[i][j] as usize].1 as i32 - j as i32).abs()) as i32;
+        }
+    }
+    return ret as u32;
+}
 
 #[inline]
 pub fn euclidian_distance_squared(state: &Vec<Vec<u16>>, target_map: &Vec<(u16, u16)>, n: u16) -> u32 {

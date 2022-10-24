@@ -1,10 +1,10 @@
 
 
-use n_puzzle::*;
 use std::{cmp::Reverse, collections::HashMap};
+use n_puzzle::*;
 
 //use std::rc::Rc;
-use std::cmp::Ordering;
+use std::cmp::{Ordering, max};
 //use crate::*;
 
 #[derive(Clone, PartialEq, Eq)]
@@ -35,8 +35,13 @@ impl Ord for Puzzle {
     }
 }
 
-static dx: &[i32] = &[0, 0, -1, 1];
-static dy: &[i32] = &[-1, 1, 0, 0];
+
+struct Stats {
+    pub moves: u32,
+    pub max_open: u32,
+    pub total_open: u32,
+}
+
 
 fn reconstruct_path(puzzle: &Puzzle) -> Vec<Rc<Puzzle>> {
     let mut ret = Vec::new();
@@ -48,7 +53,7 @@ fn reconstruct_path(puzzle: &Puzzle) -> Vec<Rc<Puzzle>> {
     ret
 }
 
-fn print_path(path: &Vec<Rc<Puzzle>>) {
+fn print_path(path: &Vec<Rc<Puzzle>>, stats: &Stats) {
     for p in path {
         for i in 0..p.n {
             for j in 0..p.n {
@@ -58,7 +63,10 @@ fn print_path(path: &Vec<Rc<Puzzle>>) {
         }
         println!();
     }
-    println!("{} moves", path.len());
+    println!("Max simultaneous evaluted state : {}", stats.max_open);
+    println!("Number of state evaluated :       {}", stats.total_open);
+    println!("Numbers of moves :                {}", path.len() - 1);
+
 }
 
 fn get_zero(state: &Vec<Vec<u16>>) -> (usize, usize) {
@@ -72,18 +80,22 @@ fn get_zero(state: &Vec<Vec<u16>>) -> (usize, usize) {
     panic!("No zero found");
 }
 
-fn a_star(mut start: Rc<Puzzle>, target_state: &Vec<Vec<u16>>, target_map: &Vec<(u16, u16)>, h: op, n: u16) {
+fn a_star(mut start: Rc<Puzzle>, target_state: &Vec<Vec<u16>>, target_map: &Vec<(u16, u16)>, h: op, n: u16, stats: &mut Stats) {
 
     let mut open_set: BinaryHeap<Rc<Puzzle>> = BinaryHeap::new();
     let mut closed_set: FxHashMap<Rc<Vec<Vec<u16>>>, Rc<Puzzle>> = FxHashMap::default(); 
 
+    let dx: &[i32] = &[0, 0, -1, 1];
+    let dy: &[i32] = &[-1, 1, 0, 0];
+
     closed_set.insert(start.state.clone(), start.clone());
     open_set.push(start);
 
-    while let Some(cur) = open_set.pop() {
+    'main_loop: while let Some(cur) = open_set.pop() {
         if cur.cost > (*closed_set.get(&cur.state).unwrap()).cost {
             continue;
         }
+
         if cur.fcost == cur.cost {
             break ;
         }
@@ -105,9 +117,13 @@ fn a_star(mut start: Rc<Puzzle>, target_state: &Vec<Vec<u16>>, target_map: &Vec<
 
             let new_state = Rc::new(new_state);
 
-            if closed_set.contains_key(&new_state) && (*closed_set.get(&new_state).unwrap()).cost <= new_cost {
+            if closed_set.contains_key(&new_state) {
+               if  (*closed_set.get(&new_state).unwrap()).cost <= new_cost {
                 continue;
-            }
+               } 
+            } else {
+                stats.total_open += 1;
+            } 
 
             let fcost =  new_cost + (h(&new_state, &target_map, n) as i32) as i32;
             let new_puzzle = Rc::new(Puzzle{ state: new_state, 
@@ -118,12 +134,16 @@ fn a_star(mut start: Rc<Puzzle>, target_state: &Vec<Vec<u16>>, target_map: &Vec<
                                              n: n });
 
             closed_set.insert(new_puzzle.state.clone(), new_puzzle.clone());
+            if new_puzzle.cost == new_puzzle.fcost {
+                break 'main_loop;
+            }
             open_set.push(new_puzzle);
-        }
-    }
 
+        }
+        stats.max_open = max(stats.max_open, open_set.len() as u32);
+    }
     let path = reconstruct_path(closed_set.get(target_state).unwrap());
-    print_path(&path);
+    print_path(&path, stats);
 }
 
 fn main() {
@@ -145,30 +165,17 @@ fn main() {
 
     let mut idx: (usize, usize) = get_zero(&start_state);
 
+    let mut stats = &mut Stats{moves: 0, max_open: 1, total_open: 1};
     let fcost = h(&start_state, &target_map, n) as i32;
-    let mut start = Rc::new(Puzzle{ state: Rc::new(start_state), 
-                            par: None, 
-                            cost: 0, 
-                            fcost: fcost,
-                            idx: idx, 
-                            n: n});
-    //println!("initial fcost : {}", start.fcost);
-    //return;
+    let start = Rc::new(Puzzle{ 
+            state: Rc::new(start_state), 
+            par: None, 
+            cost: 0, 
+            fcost: fcost,
+            idx: idx, 
+            n: n
+    });
 
-    //println!("h = {:?}", h(&start.get_state(), &target_map, n.into()));
+    a_star(start, &target_state, &target_map, h, n, stats);
 
-    //println!("h(start) = {}", h(&start.state, &target_map));
-
-    a_star(start, &target_state, &target_map, h, n);
-
-    //open_set.insert(start.clone(), (0, start.clone()));
-    //open_set.insert(vec![123], (0, start.clone()));
-
-    //for _ in 0..1000000 {
-        //open_set.insert(vec![rand::random(), 1], (0, start.clone()));
-    //}
-
-    //let mut tmp = open_set.iter();
-    ////dbg!(tmp.clone());
-    //println!("fisrt entry: {:?}", open_set.iter().next().unwrap());
 }
