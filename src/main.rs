@@ -1,31 +1,165 @@
 
-use n_puzzle::*;
 
+use n_puzzle::*;
+use std::{cmp::Reverse, collections::HashMap};
+
+//use std::rc::Rc;
+use std::cmp::Ordering;
+//use crate::*;
+
+#[derive(Clone, PartialEq, Eq)]
+pub struct Puzzle {
+    pub state: Rc<Vec<Vec<u16>>>,
+    pub par: Option<Rc<Puzzle>>,
+    pub idx: (usize, usize),
+    pub cost: i32,
+    pub fcost: i32,
+    pub n: u16,
+}
+
+impl PartialOrd for Puzzle {
+    fn partial_cmp(&self, other: &Puzzle) -> Option<Ordering> {
+        if self.fcost == other.fcost {
+            return Some(other.cost.cmp(&self.cost));
+        }
+        Some(other.fcost.cmp(&self.fcost))
+    }
+}
+
+impl Ord for Puzzle {
+    fn cmp(&self, other: &Self) -> Ordering {
+        if self.fcost == other.fcost {
+            return other.cost.cmp(&self.cost);
+        }
+        other.fcost.cmp(&self.fcost)
+    }
+}
+
+static dx: &[i32] = &[0, 0, -1, 1];
+static dy: &[i32] = &[-1, 1, 0, 0];
+
+fn reconstruct_path(puzzle: &Puzzle) -> Vec<Rc<Puzzle>> {
+    let mut ret = Vec::new();
+    let mut p = puzzle;
+    while let Some(par) = &p.par {
+        ret.push(Rc::clone(par));
+        p = par;
+    }
+    ret
+}
+
+fn print_path(path: &Vec<Rc<Puzzle>>) {
+    for p in path {
+        for i in 0..p.n {
+            for j in 0..p.n {
+                print!("{:2} ", p.state[i as usize][j as usize]);
+            }
+            println!();
+        }
+        println!();
+    }
+    println!("{} moves", path.len());
+}
+
+fn get_zero(state: &Vec<Vec<u16>>) -> (usize, usize) {
+    for i in 0..state.len() {
+        for j in 0..state.len() {
+            if state[i][j] == 0 {
+                return (i, j);
+            }
+        }
+    }
+    panic!("No zero found");
+}
+
+fn a_star(mut start: Rc<Puzzle>, target_state: &Vec<Vec<u16>>, target_map: &Vec<(u16, u16)>, h: op, n: u16) {
+
+    let mut open_set: BinaryHeap<Rc<Puzzle>> = BinaryHeap::new();
+    let mut closed_set: FxHashMap<Rc<Vec<Vec<u16>>>, Rc<Puzzle>> = FxHashMap::default(); 
+
+    closed_set.insert(start.state.clone(), start.clone());
+    open_set.push(start);
+
+    while let Some(cur) = open_set.pop() {
+        if cur.cost > (*closed_set.get(&cur.state).unwrap()).cost {
+            continue;
+        }
+        if cur.fcost == cur.cost {
+            break ;
+        }
+
+        let (i, j) = cur.idx;
+
+        for k in 0..4 {
+            let (mut y, mut x) = (i as i32 + dy[k], j as i32 + dx[k]);
+            if x < 0 || x as u16 >= n || y < 0 || y as u16 >= n {
+                continue;
+            }
+            let (x, y) = (x as usize, y as usize);
+
+            let new_cost  = cur.cost + 1;
+
+            let mut new_state = (*cur.state).clone();
+            new_state[i][j] = new_state[y][x];
+            new_state[y][x] = 0;
+
+            let new_state = Rc::new(new_state);
+
+            if closed_set.contains_key(&new_state) && (*closed_set.get(&new_state).unwrap()).cost <= new_cost {
+                continue;
+            }
+
+            let fcost =  new_cost + (h(&new_state, &target_map, n) as i32) as i32;
+            let new_puzzle = Rc::new(Puzzle{ state: new_state, 
+                                             par: Some(Rc::clone(&cur)), 
+                                             cost: new_cost, 
+                                             fcost: fcost, 
+                                             idx: (y, x), 
+                                             n: n });
+
+            closed_set.insert(new_puzzle.state.clone(), new_puzzle.clone());
+            open_set.push(new_puzzle);
+        }
+    }
+
+    let path = reconstruct_path(closed_set.get(target_state).unwrap());
+    print_path(&path);
+}
 
 fn main() {
-    let mut closed_set: BTreeMap<Vec<u16>, (u32, Vec<u16>)> = BTreeMap::new(); // .0 = cost, .1 = par
-    let mut open_set: BTreeMap<Vec<u16>, (u32, Vec<u16>)> = BTreeMap::new();
-    let mut target_state: Vec<u16> = Vec::new();
-    let mut target_map: Vec<u16> = Vec::new();
-    let mut start: Vec<u16> = Vec::new();
+    let mut target_state: Vec<Vec<u16>> = Vec::new();
+    let mut target_map: Vec<(u16,u16)> = Vec::new();
+    let mut start_state: Vec<Vec<u16>> = Vec::new();
     let mut n: u16 = 0;
 
 
-    type Binop = fn(&Vec<u16>, &Vec<u16>) -> u32;
-
-    //let mut g: Binop = nothing;
-    //let mut h: Binop = misplaced_tiles;
-    let mut h: Binop = euclidian_distance_squared;
-
-    parse(&mut n, &mut start, &mut h);
+    //let mut h: op = nothing;
+    //let mut h: op = misplaced_tiles;
+    //let mut h: op = manhattan_distance;
+    let mut h: op = euclidian_distance_squared;
+    parse(&mut n, &mut start_state, &mut h);
+    set_target(n, &mut target_state, &mut target_map);
 
     println!("n = {}", n);
-    println!("start = {:?}", start);
-
-    set_target(n, &mut target_state, &mut target_map);
     println!("target_state = {:?}", target_state);
 
-    println!("h(start) = {}", h(&start, &target_map));
+    let mut idx: (usize, usize) = get_zero(&start_state);
+
+    let fcost = h(&start_state, &target_map, n) as i32;
+    let mut start = Rc::new(Puzzle{ state: Rc::new(start_state), 
+                            par: None, 
+                            cost: 0, 
+                            fcost: fcost,
+                            idx: idx, 
+                            n: n});
+    //println!("initial fcost : {}", start.fcost);
+    //return;
+
+    //println!("h = {:?}", h(&start.get_state(), &target_map, n.into()));
+
+    //println!("h(start) = {}", h(&start.state, &target_map));
+
+    a_star(start, &target_state, &target_map, h, n);
 
     //open_set.insert(start.clone(), (0, start.clone()));
     //open_set.insert(vec![123], (0, start.clone()));

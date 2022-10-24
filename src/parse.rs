@@ -3,11 +3,11 @@ use std::io::Read;
 
 use crate::*;
 
-pub fn parse(n: &mut u16, start: &mut Vec<u16>, h: &mut Binop) {
+pub fn parse(n: &mut u16, start: &mut Vec<Vec<u16>>, h: &mut op) {
 
     //parse_args(&mut h);
 
-    let contents = std::fs::read_to_string("map/3x3.txt").expect("Something went wrong reading the file");
+    let contents = std::fs::read_to_string("map/map.txt").expect("Something went wrong reading the file");
     let mut lines: Vec<&str> = contents.split(|c| c == '\n').collect();
 
     let mut i: usize = 0;
@@ -18,6 +18,7 @@ pub fn parse(n: &mut u16, start: &mut Vec<u16>, h: &mut Binop) {
         let line = lines[i].chars().take_while(|c| *c != '#').collect::<String>();         
         let line = line.split_whitespace().collect::<Vec<&str>>();
         i += 1;
+        //dbg!(&line);
         match line.len() {
             0 => {
                 if i == lines.len() {
@@ -48,19 +49,21 @@ pub fn parse(n: &mut u16, start: &mut Vec<u16>, h: &mut Binop) {
             panic!("line {} must contain {} numbers", i, n);
         }
 
-        for j in 0..*n {
-            let num = line[j as usize].parse::<u16>().unwrap();
-            if num < 0 || num > *n * *n - 1 {
-                panic!("number {} is out of range", num);
-            }
-            if start.contains(&num) {
-                panic!("number {} is duplicated", num);
-            }
-            start.push(num);
-        }
+        start.push(line.iter().map(|x| x.parse::<u16>().unwrap()).collect::<Vec<u16>>());
+
+        //for j in 0..*n {
+            //let num = line[j as usize].parse::<u16>().unwrap();
+            //if num < 0 || num > *n * *n - 1 {
+                //panic!("number {} is out of range", num);
+            //}
+            //if start.contains(&num) {
+                //panic!("number {} is duplicated", num);
+            //}
+            //start.last().push(num);
+        //}
     }
 
-    if start.len() != (*n * *n) as usize {
+    if start.len() != *n as usize {
         panic!("map must contain {} numbers", *n * *n);
     }
 }
