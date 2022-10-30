@@ -134,13 +134,6 @@ fn a_star(mut start: Rc<Puzzle>, target_state: &Vec<Vec<u16>>, target_map: &Vec<
                 stats.total_open += 1;
             } 
 
-            //let fcost = 0;
-            //if mode == &Mode::Astar {
-                //fcost = new_cost + (h(&new_state, &target_map, n) as i32) as i32;
-            //} else {
-                //fcost = new_cost;
-            //}
-
             let fcost = match mode {
                 &Mode::Astar => {new_cost + (h(&new_state, &target_map, n) as i32) as i32}
                 &Mode::Greedy => {(h(&new_state, &target_map, n) as i32) as i32}
@@ -168,6 +161,29 @@ fn a_star(mut start: Rc<Puzzle>, target_state: &Vec<Vec<u16>>, target_map: &Vec<
     print_path(&path, stats);
 }
 
+// count the number of inversions in the puzzle, if odd -> unsolvable
+fn check_solvable(state: &Vec<Vec<u16>>, target_map: &Vec<(u16, u16)>, n: u16) -> bool {
+    let mut cnt = 0;
+    for i in 0..(n * n - 1) {
+        if state[(i / n) as usize][(i % n) as usize] == 0 {
+            continue;
+        }
+        for j in (i + 1)..(n * n) {
+            if state[(j / n) as usize][(j % n) as usize] == 0 {
+                continue;
+            }
+            let t1 = target_map[state[(i / n) as usize][(i % n) as usize] as usize];
+            let t1 = t1.0 * n + t1.1;
+            let t2 = target_map[state[(j / n) as usize][(j % n) as usize] as usize];
+            let t2 = t2.0 * n + t2.1;
+            if (t1 > t2) {
+                cnt += 1;
+            }
+        }
+    }
+    return cnt % 2 == 0;
+}
+
 fn main() {
     let mut target_state: Vec<Vec<u16>> = Vec::new();
     let mut target_map: Vec<(u16,u16)> = Vec::new();
@@ -179,6 +195,11 @@ fn main() {
     let mut mode: Mode = Mode::Astar;
     parse(&mut n, &mut start_state, &mut h, &mut mode);
     set_target(n, &mut target_state, &mut target_map);
+
+    if !check_solvable(&start_state, &target_map, n) {
+        println!("Puzzle is unsolvable");
+        return ;
+    }
 
 
     let mut idx: (usize, usize) = get_zero(&start_state);
