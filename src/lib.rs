@@ -1,23 +1,19 @@
-
-pub type op = fn(&Vec<Vec<u16>>, &Vec<(u16, u16)>, u16) -> u32;
+pub type Op = fn(&Vec<Vec<u16>>, &Vec<(u16, u16)>, u16) -> u32;
 
 pub mod heuristic;
-pub mod parse;
 pub mod init;
+pub mod parse;
 
-pub mod puzzle;
-
+pub use rustc_hash::FxHashMap;
 pub use std::collections::BTreeMap;
 pub use std::collections::BinaryHeap;
 pub use std::env;
 pub use std::fs;
 pub use std::rc::Rc;
-pub use rustc_hash::FxHashMap;
 
-pub use puzzle::*;
 pub use heuristic::*;
-pub use parse::*;
 pub use init::*;
+pub use parse::*;
 
 pub enum Mode {
     Astar = 0,
@@ -32,8 +28,9 @@ pub fn error(msg: &str) {
 
 pub fn help() {
     println!("Usage: ./npuzzle [options] file\n");
-    
-    println!("Options:\n");
+
+    println!("Options:");
+    println!("    --help      | -h  : Show this help message\n");
 
     println!("Variante:");
     println!("    --astar     | -a  : use A* (default)");

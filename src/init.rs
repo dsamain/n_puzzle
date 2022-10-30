@@ -1,4 +1,3 @@
-
 pub fn set_target(n: u16, target_state: &mut Vec<Vec<u16>>, target_map: &mut Vec<(u16, u16)>) {
     let mut cur: u16 = 1;
     let mut i: i16 = 0;
@@ -13,10 +12,13 @@ pub fn set_target(n: u16, target_state: &mut Vec<Vec<u16>>, target_map: &mut Vec
 
     while cur < n * n {
         target_state[i as usize][j as usize] = cur;
-        if i + dir_y[k % 4 ] < 0 || i + dir_y[k % 4] >= n as i16 
-            || j + dir_x[k % 4 ] < 0 || j + dir_x[k % 4] >= n as i16
-            || target_state[(i + dir_y[k % 4]) as usize][(j + dir_x[k % 4]) as usize] != 0 {
-                k += 1;
+        if i + dir_y[k % 4] < 0
+            || i + dir_y[k % 4] >= n as i16
+            || j + dir_x[k % 4] < 0
+            || j + dir_x[k % 4] >= n as i16
+            || target_state[(i + dir_y[k % 4]) as usize][(j + dir_x[k % 4]) as usize] != 0
+        {
+            k += 1;
         }
         cur += 1;
         i += dir_y[k % 4];

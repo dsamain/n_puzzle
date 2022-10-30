@@ -1,13 +1,11 @@
-
-use std::io::Read;
 use std::process::exit;
 
 use crate::*;
 
-fn parse_args(h: &mut op, mode: &mut Mode) -> String {
+fn parse_args(h: &mut Op, mode: &mut Mode) -> String {
     let args = env::args().skip(1).collect::<Vec<String>>();
 
-    if (args.len() == 0) {
+    if args.len() == 0 {
         help();
         exit(0);
     }
@@ -17,39 +15,44 @@ fn parse_args(h: &mut op, mode: &mut Mode) -> String {
     for e in args {
         if e.starts_with('-') {
             match e.as_str() {
-                "-m" | "--manhattan" => {*h = heuristic::manhattan_distance}
-                "-e" | "--euclidian" => {*h = heuristic::euclidian_distance_squared}
-                "-l" | "--linear" => {*h = heuristic::linear_conflict}
-                "-g" | "--greedy" => {*mode = Mode::Greedy}
-                "-u" | "--uniform" => {*mode = Mode::Uniformcost}
-                "-a" | "--astar" => {*mode = Mode::Astar}
-                
+                "-m" | "--manhattan" => *h = heuristic::manhattan_distance,
+                "-e" | "--euclidian" => *h = heuristic::euclidian_distance_squared,
+                "-l" | "--linear" => *h = heuristic::linear_conflict,
+                "-g" | "--greedy" => *mode = Mode::Greedy,
+                "-u" | "--uniform" => *mode = Mode::Uniformcost,
+                "-a" | "--astar" => *mode = Mode::Astar,
+                "-h" | "--help" => {
+                    help();
+                    exit(0)
+                }
+
                 _ => error(format!("Unknown option \"{}\"", e.as_str()).as_str()),
-            } 
+            }
         } else {
             filename = e;
         }
     }
-    if (filename.len() == 0) {
+    if filename.len() == 0 {
         error("No file provided");
     }
 
     return filename;
 }
 
-pub fn parse(n: &mut u16, start: &mut Vec<Vec<u16>>, h: &mut op, mode: &mut Mode) {
-
+pub fn parse(n: &mut u16, start: &mut Vec<Vec<u16>>, h: &mut Op, mode: &mut Mode) {
     let filename = parse_args(h, mode);
 
-    let contents = std::fs::read_to_string(filename).expect("Something went wrong reading the file");
-    let mut lines: Vec<&str> = contents.split(|c| c == '\n').collect();
+    let contents =
+        std::fs::read_to_string(filename).expect("Something went wrong reading the file");
+    let lines: Vec<&str> = contents.split(|c| c == '\n').collect();
 
     let mut i: usize = 0;
 
-    let mut line;
     while i < lines.len() {
-        line = String::new();
-        let line = lines[i].chars().take_while(|c| *c != '#').collect::<String>();         
+        let line: String = lines[i]
+            .chars()
+            .take_while(|c| *c != '#')
+            .collect::<String>();
         let line = line.split_whitespace().collect::<Vec<&str>>();
         i += 1;
         //dbg!(&line);
@@ -64,13 +67,18 @@ pub fn parse(n: &mut u16, start: &mut Vec<Vec<u16>>, h: &mut op, mode: &mut Mode
                 *n = line[0].parse::<u16>().unwrap();
                 break;
             }
-            _ => {error("first line must contain only one number");}
+            _ => {
+                error("first line must contain only one number");
+            }
         }
     }
 
     while i < lines.len() {
         let line = lines[i];
-        let line = line.chars().take_while(|&c| c != '#' && c != '\n').collect::<String>();
+        let line = line
+            .chars()
+            .take_while(|&c| c != '#' && c != '\n')
+            .collect::<String>();
         let line = line.split_whitespace().collect::<Vec<&str>>();
 
         i += 1;
@@ -83,12 +91,15 @@ pub fn parse(n: &mut u16, start: &mut Vec<Vec<u16>>, h: &mut op, mode: &mut Mode
             error("Invalid map");
         }
 
-        if (line.len() != *n as usize) {
+        if line.len() != *n as usize {
             error(format!("line {} must contain {} numbers", i, n).as_str());
         }
 
-
-        start.push(line.iter().map(|x| x.parse::<u16>().unwrap()).collect::<Vec<u16>>());
+        start.push(
+            line.iter()
+                .map(|x| x.parse::<u16>().unwrap())
+                .collect::<Vec<u16>>(),
+        );
     }
 
     if start.len() != *n as usize {

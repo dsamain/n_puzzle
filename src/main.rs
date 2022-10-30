@@ -1,8 +1,6 @@
 
 
-use std::{cmp::Reverse, collections::HashMap};
 use n_puzzle::*;
-use rand::distributions::Uniform;
 
 //use std::rc::Rc;
 use std::cmp::{Ordering, max};
@@ -35,10 +33,7 @@ impl Ord for Puzzle {
         other.fcost.cmp(&self.fcost)
     }
 }
-
-
 struct Stats {
-    pub moves: u32,
     pub max_open: u32,
     pub total_open: u32,
 }
@@ -89,7 +84,7 @@ fn get_zero(state: &Vec<Vec<u16>>) -> (usize, usize) {
     panic!("No zero found");
 }
 
-fn a_star(mut start: Rc<Puzzle>, target_state: &Vec<Vec<u16>>, target_map: &Vec<(u16, u16)>, h: op, n: u16, stats: &mut Stats, mode: &Mode) {
+fn a_star(start: Rc<Puzzle>, target_state: &Vec<Vec<u16>>, target_map: &Vec<(u16, u16)>, h: Op, n: u16, stats: &mut Stats, mode: &Mode) {
 
     let mut open_set: BinaryHeap<Rc<Puzzle>> = BinaryHeap::new();
     let mut closed_set: FxHashMap<Rc<Vec<Vec<u16>>>, Rc<Puzzle>> = FxHashMap::default(); 
@@ -112,7 +107,7 @@ fn a_star(mut start: Rc<Puzzle>, target_state: &Vec<Vec<u16>>, target_map: &Vec<
         let (i, j) = cur.idx;
 
         for k in 0..4 {
-            let (mut y, mut x) = (i as i32 + dy[k], j as i32 + dx[k]);
+            let (y, x) = (i as i32 + dy[k], j as i32 + dx[k]);
             if x < 0 || x as u16 >= n || y < 0 || y as u16 >= n {
                 continue;
             }
@@ -176,7 +171,7 @@ fn check_solvable(state: &Vec<Vec<u16>>, target_map: &Vec<(u16, u16)>, n: u16) -
             let t1 = t1.0 * n + t1.1;
             let t2 = target_map[state[(j / n) as usize][(j % n) as usize] as usize];
             let t2 = t2.0 * n + t2.1;
-            if (t1 > t2) {
+            if t1 > t2 {
                 cnt += 1;
             }
         }
@@ -191,7 +186,7 @@ fn main() {
     let mut n: u16 = 0;
 
 
-    let mut h: op = euclidian_distance_squared;
+    let mut h: Op = euclidian_distance_squared;
     let mut mode: Mode = Mode::Astar;
     parse(&mut n, &mut start_state, &mut h, &mut mode);
     set_target(n, &mut target_state, &mut target_map);
@@ -202,9 +197,9 @@ fn main() {
     }
 
 
-    let mut idx: (usize, usize) = get_zero(&start_state);
+    let idx: (usize, usize) = get_zero(&start_state);
 
-    let mut stats = &mut Stats{moves: 0, max_open: 1, total_open: 1};
+    let stats = &mut Stats{max_open: 1, total_open: 1};
     let fcost = h(&start_state, &target_map, n) as i32;
     let start = Rc::new(Puzzle{ 
             state: Rc::new(start_state), 
