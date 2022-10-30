@@ -4,7 +4,7 @@ use std::process::exit;
 
 use crate::*;
 
-fn parse_args(h: &mut op) -> String {
+fn parse_args(h: &mut op, mode: &mut Mode) -> String {
     let args = env::args().skip(1).collect::<Vec<String>>();
 
     if (args.len() == 0) {
@@ -18,8 +18,12 @@ fn parse_args(h: &mut op) -> String {
         if e.starts_with('-') {
             match e.as_str() {
                 "-m" | "--manhattan" => {*h = heuristic::manhattan_distance}
-                //"-h" | "--hamming" => {*h = heuristic::hamming_distance}
                 "-e" | "--euclidian" => {*h = heuristic::euclidian_distance_squared}
+                "-l" | "--linear" => {*h = heuristic::linear_conflict}
+                "-g" | "--greedy" => {*mode = Mode::Greedy}
+                "-u" | "--uniform" => {*mode = Mode::Uniformcost}
+                "-a" | "--astar" => {*mode = Mode::Astar}
+                
                 _ => error(format!("Unknown option \"{}\"", e.as_str()).as_str()),
             } 
         } else {
@@ -33,9 +37,9 @@ fn parse_args(h: &mut op) -> String {
     return filename;
 }
 
-pub fn parse(n: &mut u16, start: &mut Vec<Vec<u16>>, h: &mut op) {
+pub fn parse(n: &mut u16, start: &mut Vec<Vec<u16>>, h: &mut op, mode: &mut Mode) {
 
-    let filename = parse_args(h);
+    let filename = parse_args(h, mode);
 
     let contents = std::fs::read_to_string(filename).expect("Something went wrong reading the file");
     let mut lines: Vec<&str> = contents.split(|c| c == '\n').collect();

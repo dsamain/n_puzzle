@@ -1,4 +1,6 @@
 
+use std::collections::BinaryHeap;
+
 pub fn nothing(state: &Vec<u16>, target_map: &Vec<u16>, n: i32) -> u32 {
     0
 }
@@ -52,4 +54,38 @@ pub fn euclidian_distance_squared(state: &Vec<Vec<u16>>, target_map: &Vec<(u16, 
         }
     }
     return ret as u32;
+}
+
+#[inline]
+pub fn linear_conflict(state: &Vec<Vec<u16>>, target_map: &Vec<(u16, u16)>, n: u16) -> u32 {
+    let n = n as i32;
+    let mut ret: i32 = 0;
+    for i in 0..state.len() {
+        {
+            let mut pq: BinaryHeap<u16> = BinaryHeap::new();
+            for j in 0..state.len() {
+                if target_map[state[i][j] as usize].0 != i as u16 || state[i][j] == 0 {
+                    continue;
+                }
+                if !pq.is_empty() && pq.peek().unwrap() > &target_map[state[i][j] as usize].1 {
+                    ret += 2;
+                }
+                pq.push(target_map[state[i][j] as usize].1);
+            }
+        }
+        {
+            let mut pq: BinaryHeap<u16> = BinaryHeap::new();
+            for j in 0..state.len() {
+                if target_map[state[j][i] as usize].1 != j as u16 || state[i][j] == 0 {
+                    continue;
+                }
+                if !pq.is_empty() && pq.peek().unwrap() > &target_map[state[j][i] as usize].0 {
+                    ret += 2;
+                }
+                pq.push(target_map[state[j][i] as usize].0);
+            }
+        }
+
+    }
+    return ret as u32 + manhattan_distance(state, target_map, n as u16);
 }

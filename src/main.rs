@@ -2,6 +2,7 @@
 
 use std::{cmp::Reverse, collections::HashMap};
 use n_puzzle::*;
+use rand::distributions::Uniform;
 
 //use std::rc::Rc;
 use std::cmp::{Ordering, max};
@@ -44,7 +45,7 @@ struct Stats {
 
 
 fn reconstruct_path(puzzle: &Puzzle) -> Vec<Rc<Puzzle>> {
-    let mut ret = Vec::new();
+    let mut ret = vec![Rc::new(puzzle.clone())];
     let mut p = puzzle;
     while let Some(par) = &p.par {
         ret.push(Rc::clone(par));
@@ -54,13 +55,21 @@ fn reconstruct_path(puzzle: &Puzzle) -> Vec<Rc<Puzzle>> {
 }
 
 fn print_path(path: &Vec<Rc<Puzzle>>, stats: &Stats) {
-    for p in path {
+    for p in path.iter().rev() {
+        println!("╔{}╗", "═".repeat((p.n * 3) as usize));
         for i in 0..p.n {
+            print!("║");
             for j in 0..p.n {
-                print!("{:2} ", p.state[i as usize][j as usize]);
+                let c = p.state[i as usize][j as usize];
+                if c != 0 {
+                    print!("{:2} ", c);
+                } else {
+                    print!("   ");
+                }
             }
-            println!();
+            println!("║");
         }
+        println!("╚{}╝", "═".repeat((p.n * 3) as usize));
         println!();
     }
     println!("Max simultaneous evaluted state : {}", stats.max_open);
@@ -80,7 +89,7 @@ fn get_zero(state: &Vec<Vec<u16>>) -> (usize, usize) {
     panic!("No zero found");
 }
 
-fn a_star(mut start: Rc<Puzzle>, target_state: &Vec<Vec<u16>>, target_map: &Vec<(u16, u16)>, h: op, n: u16, stats: &mut Stats) {
+fn a_star(mut start: Rc<Puzzle>, target_state: &Vec<Vec<u16>>, target_map: &Vec<(u16, u16)>, h: op, n: u16, stats: &mut Stats, mode: &Mode) {
 
     let mut open_set: BinaryHeap<Rc<Puzzle>> = BinaryHeap::new();
     let mut closed_set: FxHashMap<Rc<Vec<Vec<u16>>>, Rc<Puzzle>> = FxHashMap::default(); 
@@ -96,7 +105,7 @@ fn a_star(mut start: Rc<Puzzle>, target_state: &Vec<Vec<u16>>, target_map: &Vec<
             continue;
         }
 
-        if cur.fcost == cur.cost {
+        if &(*cur.state) == target_state {
             break ;
         }
 
@@ -125,7 +134,19 @@ fn a_star(mut start: Rc<Puzzle>, target_state: &Vec<Vec<u16>>, target_map: &Vec<
                 stats.total_open += 1;
             } 
 
-            let fcost =  new_cost + (h(&new_state, &target_map, n) as i32) as i32;
+            //let fcost = 0;
+            //if mode == &Mode::Astar {
+                //fcost = new_cost + (h(&new_state, &target_map, n) as i32) as i32;
+            //} else {
+                //fcost = new_cost;
+            //}
+
+            let fcost = match mode {
+                &Mode::Astar => {new_cost + (h(&new_state, &target_map, n) as i32) as i32}
+                &Mode::Greedy => {(h(&new_state, &target_map, n) as i32) as i32}
+                &Mode::Uniformcost => {new_cost}
+            };
+
             let new_puzzle = Rc::new(Puzzle{ state: new_state, 
                                              par: Some(Rc::clone(&cur)), 
                                              cost: new_cost, 
@@ -134,7 +155,8 @@ fn a_star(mut start: Rc<Puzzle>, target_state: &Vec<Vec<u16>>, target_map: &Vec<
                                              n: n });
 
             closed_set.insert(new_puzzle.state.clone(), new_puzzle.clone());
-            if new_puzzle.cost == new_puzzle.fcost {
+            //if new_puzzle.cost == new_puzzle.fcost {
+            if &(*new_puzzle.state) == target_state {
                 break 'main_loop;
             }
             open_set.push(new_puzzle);
@@ -153,15 +175,11 @@ fn main() {
     let mut n: u16 = 0;
 
 
-    //let mut h: op = nothing;
-    //let mut h: op = misplaced_tiles;
-    //let mut h: op = manhattan_distance;
     let mut h: op = euclidian_distance_squared;
-    parse(&mut n, &mut start_state, &mut h);
+    let mut mode: Mode = Mode::Astar;
+    parse(&mut n, &mut start_state, &mut h, &mut mode);
     set_target(n, &mut target_state, &mut target_map);
 
-    println!("n = {}", n);
-    println!("target_state = {:?}", target_state);
 
     let mut idx: (usize, usize) = get_zero(&start_state);
 
@@ -176,6 +194,6 @@ fn main() {
             n: n
     });
 
-    a_star(start, &target_state, &target_map, h, n, stats);
+    a_star(start, &target_state, &target_map, h, n, stats, &mode);
 
 }

@@ -19,6 +19,12 @@ pub use heuristic::*;
 pub use parse::*;
 pub use init::*;
 
+pub enum Mode {
+    Astar = 0,
+    Greedy = 1,
+    Uniformcost = 2,
+}
+
 pub fn error(msg: &str) {
     eprintln!("Error: {}", msg);
     std::process::exit(1);
@@ -27,8 +33,16 @@ pub fn error(msg: &str) {
 pub fn help() {
     println!("Usage: ./npuzzle [options] file\n");
     
-    println!("Options:");
+    println!("Options:\n");
+
+    println!("Variante:");
+    println!("    --astar     | -a  : use A* (default)");
+    println!("    --greedy    | -g  : use greedy search (only heuristic)");
+    println!("    --uniform   | -u  : use uniformCost search (bfs)");
+    println!("");
+    println!("Heuristic:");
+    println!("    --euclidian | -e  : use euclidian distance (default)");
     println!("    --hamming   | -h  : use hamming distance");
     println!("    --manhattan | -m  : use manhattan distance");
-    println!("    --euclidian | -e  : use euclidian distance (default)");
+    println!("    --linear    | -l  : use linear conflict");
 }

@@ -28,7 +28,4 @@ pub fn set_target(n: u16, target_state: &mut Vec<Vec<u16>>, target_map: &mut Vec
             target_map[target_state[i as usize][j as usize] as usize] = (i, j);
         }
     }
-
-    println!("target_state: {:?}", target_state);
-    println!("target_map: {:?}", target_map);
 }
