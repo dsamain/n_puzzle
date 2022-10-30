@@ -1,10 +1,6 @@
 
-
-use n_puzzle::*;
-
-//use std::rc::Rc;
 use std::cmp::{Ordering, max};
-//use crate::*;
+use n_puzzle::*;
 
 #[derive(Clone, PartialEq, Eq)]
 pub struct Puzzle {
@@ -84,7 +80,7 @@ fn get_zero(state: &Vec<Vec<u16>>) -> (usize, usize) {
     panic!("No zero found");
 }
 
-fn a_star(start: Rc<Puzzle>, target_state: &Vec<Vec<u16>>, target_map: &Vec<(u16, u16)>, h: Op, n: u16, stats: &mut Stats, mode: &Mode) {
+fn solve(start: Rc<Puzzle>, target_state: &Vec<Vec<u16>>, target_map: &Vec<(u16, u16)>, h: Op, n: u16, stats: &mut Stats, mode: &Mode) {
 
     let mut open_set: BinaryHeap<Rc<Puzzle>> = BinaryHeap::new();
     let mut closed_set: FxHashMap<Rc<Vec<Vec<u16>>>, Rc<Puzzle>> = FxHashMap::default(); 
@@ -210,6 +206,6 @@ fn main() {
             n: n
     });
 
-    a_star(start, &target_state, &target_map, h, n, stats, &mode);
+    solve(start, &target_state, &target_map, h, n, stats, &mode);
 
 }
