@@ -2,7 +2,7 @@ use std::process::exit;
 
 use crate::*;
 
-fn parse_args(h: &mut Op, mode: &mut Mode) -> String {
+fn parse_args(h: &mut Op, mode: &mut Mode, flag: &mut u32) -> String {
     let args = env::args().skip(1).collect::<Vec<String>>();
 
     if args.len() == 0 {
@@ -18,9 +18,12 @@ fn parse_args(h: &mut Op, mode: &mut Mode) -> String {
                 "-m" | "--manhattan" => *h = heuristic::manhattan_distance,
                 "-e" | "--euclidian" => *h = heuristic::euclidian_distance_squared,
                 "-l" | "--linear" => *h = heuristic::linear_conflict,
+                "-t" | "--misplaced" => *h = heuristic::misplaced_tiles,
                 "-g" | "--greedy" => *mode = Mode::Greedy,
                 "-u" | "--uniform" => *mode = Mode::Uniformcost,
                 "-a" | "--astar" => *mode = Mode::Astar,
+                "-o" | "--order" => *flag |= FLAG_O,
+                "-r" | "--reverse" => *flag |= FLAG_R,
                 "-h" | "--help" => {
                     help();
                     exit(0)
@@ -39,8 +42,8 @@ fn parse_args(h: &mut Op, mode: &mut Mode) -> String {
     return filename;
 }
 
-pub fn parse(n: &mut u16, start: &mut Vec<Vec<u16>>, h: &mut Op, mode: &mut Mode) {
-    let filename = parse_args(h, mode);
+pub fn parse(n: &mut u16, start: &mut Vec<Vec<u16>>, h: &mut Op, mode: &mut Mode, flag: &mut u32) {
+    let filename = parse_args(h, mode, flag);
 
     let contents =
         std::fs::read_to_string(filename).expect("Something went wrong reading the file");
@@ -65,6 +68,9 @@ pub fn parse(n: &mut u16, start: &mut Vec<Vec<u16>>, h: &mut Op, mode: &mut Mode
             }
             1 => {
                 *n = line[0].parse::<u16>().unwrap();
+                if n > &mut 8 {
+                    error("unsolvable for n greater than 8 (too much time/memroy)")
+                }
                 break;
             }
             _ => {

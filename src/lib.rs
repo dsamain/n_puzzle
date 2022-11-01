@@ -21,6 +21,9 @@ pub enum Mode {
     Uniformcost = 2,
 }
 
+pub const FLAG_O: u32 = 1 << 0;
+pub const FLAG_R: u32 = 1 << 1;
+
 pub fn error(msg: &str) {
     eprintln!("Error: {}", msg);
     std::process::exit(1);
@@ -30,8 +33,10 @@ pub fn help() {
     println!("Usage: ./npuzzle [options] file\n");
 
     println!("Options:");
-    println!("    --help      | -h  : Show this help message\n");
-
+    println!("    --help      | -h  : Show this help message");
+    println!("    --reverse   | -r  : print solution in reverse order");
+    println!("    --order     | -o  : solution become tiles in increasing order");
+    println!("");
     println!("Variante:");
     println!("    --astar     | -a  : use A* (default)");
     println!("    --greedy    | -g  : use greedy search (only heuristic)");
@@ -39,7 +44,7 @@ pub fn help() {
     println!("");
     println!("Heuristic:");
     println!("    --euclidian | -e  : use euclidian distance (default)");
-    println!("    --hamming   | -h  : use hamming distance");
     println!("    --manhattan | -m  : use manhattan distance");
     println!("    --linear    | -l  : use linear conflict");
+    println!("    --misplaced | -t  : use misplaced tiles");
 }
